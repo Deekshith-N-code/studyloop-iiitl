@@ -1,1 +1,253 @@
-<!DOCTYPE html><html><head><title>StudyLoop IIITL</title></head><body><h1>Welcome to StudyLoop - IIIT Lucknow</h1></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StudyLoop — IIIT Lucknow Peer Study & Resource Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Top Navigation -->
+  <header class="navbar">
+    <div class="container nav-inner">
+      <div class="brand">
+        <div class="brand-logo">SL</div>
+        <div>
+          <span class="brand-name">StudyLoop</span>
+          <span class="campus-badge">IIIT Lucknow</span>
+        </div>
+      </div>
+
+      <nav class="nav-links">
+        <a href="#groups-section" class="nav-link active">Study Groups</a>
+        <a href="#resources-section" class="nav-link">Notes & PYQs</a>
+      </nav>
+
+      <div class="nav-actions" id="auth-area">
+        <button class="btn btn-primary" onclick="openAuthModal()">Sign In with @iiitl.ac.in</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-content">
+        <div class="pill-tag">Verified Campus Network • @iiitl.ac.in</div>
+        <h1>Collaborate, Share Notes & Ace Semesters Together.</h1>
+        <p class="hero-sub">
+          The peer-to-peer study circle and academic resource repository built exclusively for IIIT Lucknow batches across CS, IT, AI, and CSB.
+        </p>
+        <div class="hero-cta">
+          <button class="btn btn-primary btn-lg" onclick="openGroupModal()">+ Start a Study Group</button>
+          <button class="btn btn-secondary btn-lg" onclick="openResourceModal()">Share Notes / PYQs</button>
+        </div>
+        <div class="hero-stats">
+          <div class="stat-item">
+            <strong id="stat-groups">4</strong>
+            <span>Active Study Circles</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <strong id="stat-resources">3</strong>
+            <span>Verified Resources</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <strong>4</strong>
+            <span>B.Tech Branches</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-card">
+        <div class="card-header-row">
+          <span class="status-dot"></span>
+          <span>Quick Campus Verification</span>
+        </div>
+        <h3>Student Portal Access</h3>
+        <p class="muted-text">Sign in with your official institute email to create study rooms, join peer cohorts, and upload exam material.</p>
+        <form id="quick-login-form" onsubmit="handleQuickLogin(event)">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="quick-name" placeholder="e.g., Deekshith N" required />
+          </div>
+          <div class="form-group">
+            <label>IIITL Email Address</label>
+            <input type="email" id="quick-email" placeholder="lcs2024001@iiitl.ac.in" required />
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Branch</label>
+              <select id="quick-branch">
+                <option value="CS">CS</option>
+                <option value="IT">IT</option>
+                <option value="AI">AI</option>
+                <option value="CSB">CSB</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Batch</label>
+              <select id="quick-batch">
+                <option value="2028">2028</option>
+                <option value="2027" selected>2027</option>
+                <option value="2026">2026</option>
+                <option value="2025">2025</option>
+              </select>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">Verify & Enter Campus Hub</button>
+          <p id="quick-auth-msg" class="form-feedback"></p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="container main-content">
+    <!-- Study Groups Section -->
+    <section id="groups-section" class="section-block">
+      <div class="section-header">
+        <div>
+          <h2>Active Study Groups</h2>
+          <p class="muted-text">Join a peer group for course prep, coding sprints, or project collaboration.</p>
+        </div>
+        <div class="filter-controls">
+          <input type="text" id="group-search" class="search-input" placeholder="Search by subject code or topic..." oninput="filterGroups()" />
+          <select id="branch-filter" class="filter-select" onchange="filterGroups()">
+            <option value="ALL">All Branches</option>
+            <option value="CS">CS</option>
+            <option value="IT">IT</option>
+            <option value="AI">AI</option>
+            <option value="CSB">CSB</option>
+          </select>
+          <button class="btn btn-primary" onclick="openGroupModal()">+ New Group</button>
+        </div>
+      </div>
+
+      <div id="groups-grid" class="cards-grid">
+        <!-- Populated dynamically via app.js -->
+      </div>
+    </section>
+
+    <!-- Resources Section -->
+    <section id="resources-section" class="section-block">
+      <div class="section-header">
+        <div>
+          <h2>Academic Notes & PYQ Vault</h2>
+          <p class="muted-text">Curated lecture notes, formula sheets, and previous year question papers.</p>
+        </div>
+        <button class="btn btn-secondary" onclick="openResourceModal()">+ Upload Resource Link</button>
+      </div>
+
+      <div id="resources-grid" class="resources-grid">
+        <!-- Populated dynamically via app.js -->
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div>
+        <strong>StudyLoop — IIIT Lucknow Edition</strong>
+        <p class="muted-text">Built for IIITL students • Multi-tenant campus architecture ready.</p>
+      </div>
+      <div class="footer-meta">Chak Ganjaria, C.G. City, Lucknow • @iiitl.ac.in</div>
+    </div>
+  </footer>
+
+  <!-- Create Group Modal -->
+  <div id="group-modal" class="modal hidden">
+    <div class="modal-backdrop" onclick="closeModal('group-modal')"></div>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Create a New Study Group</h3>
+        <button class="close-btn" onclick="closeModal('group-modal')">&times;</button>
+      </div>
+      <form onsubmit="handleCreateGroup(event)">
+        <div class="form-group">
+          <label>Group Title</label>
+          <input type="text" id="group-title" placeholder="e.g., Automata Theory & Compiler Prep" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Subject Code</label>
+            <input type="text" id="group-code" placeholder="e.g., CS301" required />
+          </div>
+          <div class="form-group">
+            <label>Target Branch</label>
+            <select id="group-branch">
+              <option value="ALL">All Branches</option>
+              <option value="CS">CS</option>
+              <option value="IT">IT</option>
+              <option value="AI">AI</option>
+              <option value="CSB">CSB</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Schedule</label>
+            <input type="text" id="group-schedule" placeholder="e.g., Tue & Thu • 8:00 PM" />
+          </div>
+          <div class="form-group">
+            <label>Location / Mode</label>
+            <input type="text" id="group-location" placeholder="e.g., Library / Google Meet" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Description & Goals</label>
+          <textarea id="group-desc" rows="3" placeholder="What topics or problem sets will this group focus on?"></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Publish Study Group</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Resource Modal -->
+  <div id="resource-modal" class="modal hidden">
+    <div class="modal-backdrop" onclick="closeModal('resource-modal')"></div>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Share Study Resource</h3>
+        <button class="close-btn" onclick="closeModal('resource-modal')">&times;</button>
+      </div>
+      <form onsubmit="handleCreateResource(event)">
+        <div class="form-group">
+          <label>Resource Title</label>
+          <input type="text" id="res-title" placeholder="e.g., Mid-Sem DBMS Solutions PDF" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Subject Code</label>
+            <input type="text" id="res-code" placeholder="e.g., IT205" required />
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select id="res-type">
+              <option value="Notes">Lecture Notes</option>
+              <option value="PYQs">Previous Year Papers (PYQs)</option>
+              <option value="Cheatsheet">Formula Cheatsheet</option>
+              <option value="Slides">Lab / Slide Deck</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Drive / GitHub / Notion Link</label>
+          <input type="url" id="res-link" placeholder="https://drive.google.com/..." required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Add to Campus Vault</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
