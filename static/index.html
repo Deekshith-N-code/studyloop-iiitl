@@ -73,11 +73,11 @@
         <form id="quick-login-form" onsubmit="handleQuickLogin(event)">
           <div class="form-group">
             <label>Full Name</label>
-            <input type="text" id="quick-name" placeholder="e.g., Deekshith N" required />
+            <input type="text" id="quick-name" maxlength="70" placeholder="e.g., Deekshith N" required />
           </div>
           <div class="form-group">
             <label>IIITL Email Address</label>
-            <input type="email" id="quick-email" placeholder="lcs2024001@iiitl.ac.in" required />
+            <input type="email" id="quick-email" maxlength="120" placeholder="lcs2024001@iiitl.ac.in" required />
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -171,12 +171,12 @@
       <form onsubmit="handleCreateGroup(event)">
         <div class="form-group">
           <label>Group Title</label>
-          <input type="text" id="group-title" placeholder="e.g., Automata Theory & Compiler Prep" required />
+          <input type="text" id="group-title" maxlength="100" placeholder="e.g., Automata Theory & Compiler Prep" required />
         </div>
         <div class="form-row">
           <div class="form-group">
             <label>Subject Code</label>
-            <input type="text" id="group-code" placeholder="e.g., CS301" required />
+            <input type="text" id="group-code" maxlength="20" placeholder="e.g., CS301" required />
           </div>
           <div class="form-group">
             <label>Target Branch</label>
@@ -192,16 +192,16 @@
         <div class="form-row">
           <div class="form-group">
             <label>Schedule</label>
-            <input type="text" id="group-schedule" placeholder="e.g., Tue & Thu • 8:00 PM" />
+            <input type="text" id="group-schedule" maxlength="100" placeholder="e.g., Tue & Thu • 8:00 PM" />
           </div>
           <div class="form-group">
             <label>Location / Mode</label>
-            <input type="text" id="group-location" placeholder="e.g., Library / Google Meet" />
+            <input type="text" id="group-location" maxlength="100" placeholder="e.g., Library / Google Meet" />
           </div>
         </div>
         <div class="form-group">
           <label>Description & Goals</label>
-          <textarea id="group-desc" rows="3" placeholder="What topics or problem sets will this group focus on?"></textarea>
+          <textarea id="group-desc" maxlength="2000" rows="3" placeholder="What topics or problem sets will this group focus on?"></textarea>
         </div>
         <button type="submit" class="btn btn-primary btn-full">Publish Study Group</button>
       </form>
@@ -219,12 +219,12 @@
       <form onsubmit="handleCreateResource(event)">
         <div class="form-group">
           <label>Resource Title</label>
-          <input type="text" id="res-title" placeholder="e.g., Mid-Sem DBMS Solutions PDF" required />
+          <input type="text" id="res-title" maxlength="120" placeholder="e.g., Mid-Sem DBMS Solutions PDF" required />
         </div>
         <div class="form-row">
           <div class="form-group">
             <label>Subject Code</label>
-            <input type="text" id="res-code" placeholder="e.g., IT205" required />
+            <input type="text" id="res-code" maxlength="20" placeholder="e.g., IT205" required />
           </div>
           <div class="form-group">
             <label>Category</label>
@@ -238,7 +238,7 @@
         </div>
         <div class="form-group">
           <label>Drive / GitHub / Notion Link</label>
-          <input type="url" id="res-link" placeholder="https://drive.google.com/..." required />
+          <input type="url" id="res-link" maxlength="300" placeholder="https://drive.google.com/..." required />
         </div>
         <button type="submit" class="btn btn-primary btn-full">Add to Campus Vault</button>
       </form>

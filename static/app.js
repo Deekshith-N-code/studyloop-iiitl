@@ -187,7 +187,7 @@ function renderResources(resources) {
       </div>
       <div class="resource-footer">
         <span>By ${escapeHtml(r.shared_by || 'IIITL Student')}</span>
-        <a href="${escapeAttr(r.link)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">Open &nearr;</a>
+        <a href="${safeHref(r.link)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm">Open &nearr;</a>
       </div>
     </div>
   `).join('');
@@ -229,6 +229,9 @@ async function handleCreateGroup(event) {
     event.target.reset();
     await loadGroups();
     showToast('Study group published!');
+  } else {
+    const data = await res.json().catch(() => ({}));
+    showToast(data.error || 'Could not save. Please try again.');
   }
 }
 
@@ -254,6 +257,9 @@ async function handleCreateResource(event) {
     event.target.reset();
     await loadResources();
     showToast('Resource added to campus vault!');
+  } else {
+    const data = await res.json().catch(() => ({}));
+    showToast(data.error || 'Could not save. Please try again.');
   }
 }
 
@@ -262,11 +268,17 @@ function escapeHtml(str) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
-function escapeAttr(url) {
-  const clean = String(url).trim();
-  if (/^https?:\/\//i.test(clean)) return clean;
+// Returns an http(s) URL escaped for use inside an HTML attribute, or '#'.
+function safeHref(value) {
+  try {
+    const url = new URL(String(value).trim());
+    if (url.protocol === 'http:' || url.protocol === 'https:') return escapeHtml(url.href);
+  } catch (err) {
+    // Not a valid absolute URL.
+  }
   return '#';
 }
