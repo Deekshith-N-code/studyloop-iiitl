@@ -1,9 +1,11 @@
 import os
+import re
 from datetime import datetime
+from urllib.parse import urlsplit
 from flask import Flask, jsonify, request, send_from_directory
-from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
+from werkzeug.exceptions import HTTPException
 
 load_dotenv()
 
@@ -15,13 +17,13 @@ ALLOWED_DOMAINS = os.getenv('ALLOWED_DOMAINS', 'iiitl.ac.in').split(',')
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-dev-key-iiitl-studyloop')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', f"sqlite:///{os.path.join(BASE_DIR, 'studyloop.db')}")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['MAX_CONTENT_LENGTH'] = 64 * 1024
 
 # Heroku/Render Postgres compatibility fix
 if app.config['SQLALCHEMY_DATABASE_URI'].startswith("postgres://"):
     app.config['SQLALCHEMY_DATABASE_URI'] = app.config['SQLALCHEMY_DATABASE_URI'].replace("postgres://", "postgresql://", 1)
 
 db = SQLAlchemy(app)
-CORS(app)
 
 # Database Models
 class User(db.Model):
@@ -137,19 +139,96 @@ with app.app_context():
     db.create_all()
     seed_initial_data()
 
+BRANCHES = ('CS', 'IT', 'AI', 'CSB')
+RESOURCE_TYPES = ('Notes', 'PYQs', 'Cheatsheet', 'Slides')
+EMAIL_LOCAL_RE = re.compile(r'[a-z0-9_+-]+(\.[a-z0-9_+-]+)*')
+CONTROL_CHARS_RE = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\ud800-\udfff]')
+
+
+class ValidationError(Exception):
+    pass
+
+
+@app.errorhandler(ValidationError)
+def handle_validation_error(err):
+    return jsonify({'error': str(err)}), 400
+
+
+@app.errorhandler(HTTPException)
+def handle_http_error(err):
+    if request.path.startswith('/api/'):
+        return jsonify({'error': err.description}), err.code
+    return err
+
+
+@app.before_request
+def block_cross_site_writes():
+    # Covers requests that need no CORS preflight, such as the body-less join.
+    if request.method == 'POST' and request.headers.get('Sec-Fetch-Site') == 'cross-site':
+        return jsonify({'error': 'Cross-site requests are not allowed.'}), 403
+
+
+def get_json_object():
+    data = request.get_json()
+    if not isinstance(data, dict):
+        raise ValidationError('Request body must be a JSON object.')
+    return data
+
+
+def text_field(data, key, label, max_length, default='', required=False):
+    value = data.get(key, default)
+    if not isinstance(value, str):
+        raise ValidationError(f'{label} must be text.')
+    value = value.strip() or default
+    if required and not value:
+        raise ValidationError(f'{label} is required.')
+    if len(value) > max_length:
+        raise ValidationError(f'{label} must be {max_length} characters or fewer.')
+    if CONTROL_CHARS_RE.search(value):
+        raise ValidationError(f'{label} contains invalid characters.')
+    return value
+
+
+def choice_field(data, key, label, choices, default):
+    value = text_field(data, key, label, 50, default)
+    if value not in choices:
+        raise ValidationError(f'{label} must be one of: {", ".join(choices)}.')
+    return value
+
+
+def batch_year_field(data):
+    value = data.get('batch_year', 2027)
+    latest = datetime.now().year + 6
+    if type(value) is not int or not 2015 <= value <= latest:
+        raise ValidationError(f'Batch must be a year between 2015 and {latest}.')
+    return value
+
+
+def link_field(data):
+    value = text_field(data, 'link', 'Resource Link', 300, required=True)
+    try:
+        parts = urlsplit(value)
+        valid = parts.scheme in ('http', 'https') and bool(parts.hostname)
+    except ValueError:
+        valid = False
+    if not valid or re.search(r'[\s"<>\\]', value):
+        raise ValidationError('Resource Link must be a valid http or https URL.')
+    return value
+
+
 def is_valid_college_email(email):
-    if '@' not in email:
-        return False
-    domain = email.split('@')[-1].lower()
-    return domain in [d.strip().lower() for d in ALLOWED_DOMAINS]
+    local, _, domain = email.rpartition('@')
+    return bool(EMAIL_LOCAL_RE.fullmatch(local)) and \
+        domain in [d.strip().lower() for d in ALLOWED_DOMAINS]
 
 @app.route('/api/auth/register', methods=['POST'])
 def register():
-    data = request.get_json() or {}
-    email = data.get('email', '').strip().lower()
-    name = data.get('name', '').strip() or 'IIITL Student'
-    branch = data.get('branch', 'CS').strip()
-    batch_year = data.get('batch_year', 2027)
+    data = get_json_object()
+    email = text_field(data, 'email', 'Email', 120, required=True).lower()
+    name = text_field(data, 'name', 'Name', 80, 'IIITL Student')
+    branch = choice_field(data, 'branch', 'Branch', BRANCHES, 'CS')
+    batch_year = batch_year_field(data)
+    campus_id = text_field(data, 'campus_id', 'Campus', 20, 'iiitl')
 
     if not is_valid_college_email(email):
         return jsonify({
@@ -163,7 +242,7 @@ def register():
             name=name,
             branch=branch,
             batch_year=batch_year,
-            campus_id=data.get('campus_id', 'iiitl')
+            campus_id=campus_id
         )
         db.session.add(user)
     else:
@@ -207,22 +286,17 @@ def get_groups():
 
 @app.route('/api/groups', methods=['POST'])
 def create_group():
-    data = request.get_json() or {}
-    title = data.get('title', '').strip()
-    subject_code = data.get('subject_code', '').strip().upper()
-    if not title or not subject_code:
-        return jsonify({'error': 'Title and Subject Code are required.'}), 400
-
+    data = get_json_object()
     group = StudyGroup(
-        title=title,
-        subject_code=subject_code,
-        branch=data.get('branch', 'ALL').strip() or 'ALL',
-        schedule=data.get('schedule', 'Flexible / Evening').strip() or 'Flexible / Evening',
-        location=data.get('location', 'IIITL Campus / Online').strip() or 'IIITL Campus / Online',
-        description=data.get('description', '').strip(),
+        title=text_field(data, 'title', 'Title', 100, required=True),
+        subject_code=text_field(data, 'subject_code', 'Subject Code', 20, required=True).upper()[:20],
+        branch=choice_field(data, 'branch', 'Branch', ('ALL',) + BRANCHES, 'ALL'),
+        schedule=text_field(data, 'schedule', 'Schedule', 100, 'Flexible / Evening'),
+        location=text_field(data, 'location', 'Location', 100, 'IIITL Campus / Online'),
+        description=text_field(data, 'description', 'Description', 2000),
         members_count=1,
-        created_by=data.get('created_by', 'IIITL Student'),
-        campus_id=data.get('campus_id', 'iiitl')
+        created_by=text_field(data, 'created_by', 'Host', 80, 'IIITL Student'),
+        campus_id=text_field(data, 'campus_id', 'Campus', 20, 'iiitl')
     )
     db.session.add(group)
     db.session.commit()
@@ -251,20 +325,14 @@ def get_resources():
 
 @app.route('/api/resources', methods=['POST'])
 def add_resource():
-    data = request.get_json() or {}
-    title = data.get('title', '').strip()
-    subject_code = data.get('subject_code', '').strip().upper()
-    link = data.get('link', '').strip()
-    if not title or not subject_code or not link:
-        return jsonify({'error': 'Title, Subject Code, and Resource Link are required.'}), 400
-
+    data = get_json_object()
     res = Resource(
-        title=title,
-        subject_code=subject_code,
-        resource_type=data.get('resource_type', 'Notes'),
-        link=link,
-        shared_by=data.get('shared_by', 'IIITL Student'),
-        campus_id=data.get('campus_id', 'iiitl')
+        title=text_field(data, 'title', 'Title', 120, required=True),
+        subject_code=text_field(data, 'subject_code', 'Subject Code', 20, required=True).upper()[:20],
+        resource_type=choice_field(data, 'resource_type', 'Category', RESOURCE_TYPES, 'Notes'),
+        link=link_field(data),
+        shared_by=text_field(data, 'shared_by', 'Shared by', 80, 'IIITL Student'),
+        campus_id=text_field(data, 'campus_id', 'Campus', 20, 'iiitl')
     )
     db.session.add(res)
     db.session.commit()
